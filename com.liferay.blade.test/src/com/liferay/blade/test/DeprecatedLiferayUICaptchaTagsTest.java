@@ -31,26 +31,23 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceReference;
 
-public class LiferayUIFlagsTagsTest {
-
+public class DeprecatedLiferayUICaptchaTagsTest {
 	@Test
 	public void findProblems() throws Exception {
-		ServiceReference<Migration> sr =
-			context.getServiceReference(Migration.class);
+		ServiceReference<Migration> sr = context
+				.getServiceReference(Migration.class);
 
 		Migration m = context.getService(sr);
 
-		List<Problem> problems = m.findProblems(
-			new File("jsptests/liferayui-flags/"), new NullProgressMonitor());
+		List<Problem> problems = m.findProblems(new File("jsptests/liferay-ui-captcha/"), new NullProgressMonitor());
 
 		assertEquals(1, problems.size());
 
 		boolean found = false;
 
 		for (Problem problem : problems) {
-			if (problem.file.getName().endsWith("LiferayUIFlagsTagsTest.jsp")) {
-				if (problem.lineNumber == 3 && problem.startOffset >= 65 &&
-					problem.endOffset >= 273) {
+			if (problem.file.getName().endsWith("LiferayUICapcha.jsp")) {
+				if (problem.lineNumber == 1) {
 					found = true;
 				}
 			}
@@ -61,7 +58,6 @@ public class LiferayUIFlagsTagsTest {
 		}
 	}
 
-	private final BundleContext context =
-		FrameworkUtil.getBundle(this.getClass()).getBundleContext();
-
+	private final BundleContext context = FrameworkUtil.getBundle(
+		this.getClass()).getBundleContext();
 }
