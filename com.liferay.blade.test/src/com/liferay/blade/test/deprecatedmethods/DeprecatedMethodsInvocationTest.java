@@ -23,6 +23,11 @@ import com.liferay.blade.test.apichanges.APITestBase;
 public class DeprecatedMethodsInvocationTest extends APITestBase {
 
 	@Override
+	public int getExpectedNumber() {
+		return 60;
+	}
+
+	@Override
 	public String getImplClassName() {
 		return "DeprecatedMethodsInvocation";
 	}
@@ -30,7 +35,7 @@ public class DeprecatedMethodsInvocationTest extends APITestBase {
 	@Override
 	public File getTestFile() {
 		return new File(
-				"projects/sample-service-builder-portlet/docroot/WEB-INF/src/com/liferay/sampleservicebuilder/service/impl/FooLocalServiceImpl.java");
+				"projects/deprecated-methods-test/src/main/java/cz/datalite/zk/liferay/mork/PortalMockFactory.java");
 	}
 
 }
