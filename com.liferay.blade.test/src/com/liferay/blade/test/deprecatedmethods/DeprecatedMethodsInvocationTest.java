@@ -16,26 +16,35 @@
 
 package com.liferay.blade.test.deprecatedmethods;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.File;
+import java.util.List;
 
-import com.liferay.blade.test.apichanges.APITestBase;
+import org.junit.Test;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceReference;
 
-public class DeprecatedMethodsInvocationTest extends APITestBase {
+import com.liferay.blade.api.Migration;
+import com.liferay.blade.api.Problem;
+import com.liferay.blade.util.NullProgressMonitor;
 
-	@Override
-	public int getExpectedNumber() {
-		return 60;
+public class DeprecatedMethodsInvocationTest {
+
+	@Test
+	public void findProblems() throws Exception {
+		ServiceReference<Migration> sr = context.getServiceReference(Migration.class);
+
+		Migration m = context.getService(sr);
+
+		List<Problem> problems = m
+				.findDeprecatedMethods(new File(
+						"projects/deprecated-methods-test/src/main/java/cz/datalite/zk/liferay/mork/PortalMockFactory.java"),
+								new NullProgressMonitor());
+
+		assertEquals(60, problems.size());
 	}
 
-	@Override
-	public String getImplClassName() {
-		return "DeprecatedMethodsInvocation";
-	}
-
-	@Override
-	public File getTestFile() {
-		return new File(
-				"projects/deprecated-methods-test/src/main/java/cz/datalite/zk/liferay/mork/PortalMockFactory.java");
-	}
-
+	private final BundleContext context = FrameworkUtil.getBundle(this.getClass()).getBundleContext();
 }
