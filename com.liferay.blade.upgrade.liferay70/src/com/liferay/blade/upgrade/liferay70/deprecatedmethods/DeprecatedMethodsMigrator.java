@@ -46,11 +46,17 @@ public class DeprecatedMethodsMigrator extends JavaFileMigrator {
 				if (searchResults != null) {
 					for (SearchResult searchResult : searchResults) {
 						String fileExtension = new Path(file.getAbsolutePath()).getFileExtension();
+
+						String makerType = Problem.ERROR;
+
+						if (tempMethod.getString("deprecatedVersion").equals("7.0")) {
+							makerType = Problem.WARNING;
+						}
 	
 						problems.add(new Problem(tempMethod.getString("javadoc"), tempMethod.getString("javadoc"),
 								fileExtension, "", file, searchResult.startLine, searchResult.startOffset,
 								searchResult.endOffset, tempMethod.getString("javadoc"), searchResult.autoCorrectContext,
-								Problem.STATUS_NOT_RESOLVED, Problem.DEFAULT_MARKER_ID));
+								Problem.STATUS_NOT_RESOLVED, Problem.DEFAULT_MARKER_ID, makerType));
 					}
 				}
 			}
