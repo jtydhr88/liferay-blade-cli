@@ -48,11 +48,14 @@ public class IndexerThreeMethodsChange  extends JavaFileMigrator {
 		final List<SearchResult> searchResults = new ArrayList<>();
 
 		List<SearchResult> declarations = javaFileChecker.findMethodDeclaration(
-				"addRelatedEntryFields", new String[] { "Document", "Object" }, null);
+				"addRelatedEntryFields", new String[] { "Document", "Object" }, null,
+				"NotImplementsInterfaceCondition", "RelatedEntryIndexer");
+
 		searchResults.addAll(declarations);
 
 		declarations = javaFileChecker.findMethodDeclaration(
-				"reindexDDMStructures", new String[] { "List<Long>" }, null);
+				"reindexDDMStructures", new String[] { "List<Long>" }, null,
+				"NotImplementsInterfaceCondition","DDMStructureIndexer");
 		searchResults.addAll(declarations);
 
 		declarations = javaFileChecker.findMethodDeclaration("getQueryString",
