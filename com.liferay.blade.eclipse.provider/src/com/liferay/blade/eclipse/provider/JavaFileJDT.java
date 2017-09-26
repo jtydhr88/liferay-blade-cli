@@ -269,24 +269,24 @@ public class JavaFileJDT extends WorkspaceFile implements JavaFile {
 
 		final List<SearchResult> searchResults = new ArrayList<>();
 
-		String conditonClassName = conditionParams[0];
+		if (conditionParams != null && conditionParams.length > 0) {
+			String conditonClassName = conditionParams[0];
 
-		try {
-				Class<?> conditioncalss =
-						Class.forName("com.liferay.blade.eclipse.provider.conditions." + conditonClassName);
+			try {
+				Class<?> conditionClass =
+					Class.forName("com.liferay.blade.eclipse.provider.conditions." + conditonClassName);
 
 				ICondition condition =
-						(ICondition) conditioncalss.getConstructor(String[].class).newInstance(new Object[] { conditionParams });
+					(ICondition) conditionClass.getConstructor(String[].class).newInstance(new Object[] { conditionParams });
 
 				condition.setAst(_ast);
 
-			if (!condition.test()) {
-				return searchResults;
+				if (!condition.test()) {
+					return searchResults;
+				}
 			}
-		}
-
-		catch (Exception e) {
-			e.printStackTrace();
+			catch (Exception e) {
+			}
 		}
 
 		_ast.accept(new ASTVisitor() {

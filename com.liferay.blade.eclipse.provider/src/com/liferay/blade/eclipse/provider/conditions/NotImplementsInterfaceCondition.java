@@ -22,8 +22,6 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 
 public class NotImplementsInterfaceCondition extends AbstractJDTCondition {
 
-	private boolean _found = false;
-
 	public NotImplementsInterfaceCondition(String[] params) {
 		super(params);
 
@@ -43,6 +41,8 @@ public class NotImplementsInterfaceCondition extends AbstractJDTCondition {
 				for (ITypeBinding interfaceBind : interfaceBinds) {
 					if (interfaceBind.getName().equals(_notImplementsInterface)) {
 						_found = true;
+
+						break;
 					}
 				}
 
@@ -53,6 +53,7 @@ public class NotImplementsInterfaceCondition extends AbstractJDTCondition {
 		return !_found;
 	}
 
+	private boolean _found = false;
 	private String _notImplementsInterface;
 
 }
