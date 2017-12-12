@@ -90,23 +90,25 @@ public class ServerCommand {
 		for (File file : dir.listFiles()) {
 			String fileName = file.getName();
 
-			if (fileName.startsWith(serverType) && file.isDirectory()) {
-				if (serverType.equals("tomcat")) {
-					commmandTomcat(cmd, file, options);
+			if (fileName.startsWith("tomcat") && file.isDirectory()) {
+				commmandTomcat(cmd, file, options);
 
-					return;
-				}
-				else if (serverType.equals("jboss") ||
-						 serverType.equals("wildfly")) {
+				return;
+			}
 
-					commmandJBossWildfly(cmd, file, options);
+			else if ((fileName.startsWith("jboss") || fileName.startsWith("wildfly")) && file.isDirectory()) {
+				commmandJBossWildfly(cmd, file, options);
 
-					return;
-				}
+				return;
 			}
 		}
 
-		_blade.error(serverType + " not supported");
+		if (serverType != null) {
+			_blade.error(serverType + " not supported");
+		}
+		else {
+			_blade.error("unknow server type");
+		}
 	}
 
 	private void commmandJBossWildfly(
@@ -225,20 +227,6 @@ public class ServerCommand {
 
 			serverType = properties.getProperty(
 				Workspace.DEFAULT_BUNDLE_ARTIFACT_NAME_PROPERTY);
-
-			if (serverType == null) {
-				serverType = Workspace.DEFAULT_BUNDLE_ARTIFACT_NAME;
-			}
-
-			if (serverType.contains("jboss")) {
-				serverType = "jboss";
-			}
-			else if (serverType.contains("wildfly")) {
-				serverType = "wildfly";
-			}
-			else if (serverType.contains("tomcat")) {
-				serverType = "tomcat";
-			}
 
 			File tempLiferayHome = new File(liferayHomePath);
 			File liferayHomeDir = null;
