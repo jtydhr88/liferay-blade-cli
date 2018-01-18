@@ -52,7 +52,7 @@ public class InitCommand {
 	public void execute() throws Exception {
 		String name = _options.getName();
 
-		File destDir = name != null ? new File(_blade.getBase(), name) : _blade.getBase();
+		File destDir = name != null ? new File(_blade.getBase(), name) : _blade.getBase().getAbsoluteFile();
 
 		File temp = null;
 
