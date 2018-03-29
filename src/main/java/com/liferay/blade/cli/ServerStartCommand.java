@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -41,9 +40,13 @@ public class ServerStartCommand {
 	}
 
 	public void execute() throws Exception {
-		Path gradleWrapper = Util.getGradleWrapper(_blade.getBase()).toPath();
+		File gradleWrapperFile = Util.getGradleWrapper(_blade.getBase());
 
-		File rootDir = gradleWrapper.getParent().toFile();
+		Path gradleWrapperPath = gradleWrapperFile.toPath();
+
+		Path parent = gradleWrapperPath.getParent();
+
+		File rootDir = parent.toFile();
 
 		String serverType = null;
 
@@ -131,34 +134,46 @@ public class ServerStartCommand {
 	}
 
 	private void _commandServer(Path dir, String serverType) throws Exception {
-		try (Stream<Path> files = Files.list(dir)) {
-			Optional<Path> findAny = files.findAny();
+		if (Files.notExists(dir) || Util.isDirEmpty(dir)) {
+			_blade.error(
+				" bundles folder does not exist in Liferay Workspace, execute 'gradlew initBundle' in order to " +
+					"create it.");
 
-			if (Files.notExists(dir) || !findAny.isPresent()) {
-				_blade.error(
-					" bundles folder does not exist in Liferay Workspace, execute 'gradlew initBundle' in order to " +
-						"create it.");
+			return;
+		}
 
-				return;
-			}
-
-			for (Path file : files.collect(Collectors.toList())) {
+		Stream<Path> stream = Files.find(
+			dir, Integer.MAX_VALUE,
+			(file, bbfa) -> {
 				Path fileName = file.getFileName();
 
-				if (fileName.startsWith(serverType) && Files.isDirectory(file)) {
-					if (serverType.equals("tomcat")) {
-						_commmandTomcat(file);
+				String fileNameString = String.valueOf(fileName);
 
-						return;
-					}
-					else if (serverType.equals("jboss") || serverType.equals("wildfly")) {
-						_commmandJBossWildfly(file);
+				return fileNameString.startsWith(serverType) && Files.isDirectory(file);
+			});
 
-						return;
-					}
-				}
+		Optional<Path> server = stream.findFirst();
+
+		stream.close();
+
+		boolean success = false;
+
+		if (server.isPresent()) {
+			Path file = server.get();
+
+			if (serverType.equals("tomcat")) {
+				_commmandTomcat(file);
+
+				success = true;
 			}
+			else if (serverType.equals("jboss") || serverType.equals("wildfly")) {
+				_commmandJBossWildfly(file);
 
+				success = true;
+			}
+		}
+
+		if (!success) {
 			_blade.error(serverType + " not supported");
 		}
 	}
@@ -178,7 +193,9 @@ public class ServerStartCommand {
 			debug = " --debug";
 		}
 
-		Process process = Util.startProcess(_blade, executable + debug, dir.resolve("bin").toFile(), enviroment);
+		Path binPath = dir.resolve("bin");
+
+		Process process = Util.startProcess(_blade, executable + debug, binPath.toFile(), enviroment);
 
 		process.waitFor();
 	}
@@ -203,16 +220,21 @@ public class ServerStartCommand {
 			startCommand = " jpda " + startCommand;
 		}
 
-		Path logs = dir.resolve("logs");
+		Path logsPath = dir.resolve("logs");
 
-		Files.createDirectory(logs);
+		if (!Files.exists(logsPath)) {
+			Files.createDirectory(logsPath);
+		}
 
-		Path catalinaOut = logs.resolve("catalina.out");
+		Path catalinaOutPath = logsPath.resolve("catalina.out");
 
-		Files.createFile(catalinaOut);
+		if (!Files.exists(catalinaOutPath)) {
+			Files.createFile(catalinaOutPath);
+		}
 
-		final Process process = Util.startProcess(
-			_blade, executable + startCommand, dir.resolve("bin").toFile(), enviroment);
+		Path binPath = dir.resolve("bin");
+
+		final Process process = Util.startProcess(_blade, executable + startCommand, binPath.toFile(), enviroment);
 
 		Runtime runtime = Runtime.getRuntime();
 
@@ -232,7 +254,7 @@ public class ServerStartCommand {
 			});
 
 		if (_args.isBackground() && _args.isTail()) {
-			Process tailProcess = Util.startProcess(_blade, "tail -f catalina.out", logs.toFile(), enviroment);
+			Process tailProcess = Util.startProcess(_blade, "tail -f catalina.out", logsPath.toFile(), enviroment);
 
 			tailProcess.waitFor();
 		}

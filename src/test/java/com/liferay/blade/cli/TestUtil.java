@@ -16,30 +16,25 @@
 
 package com.liferay.blade.cli;
 
-import java.util.Objects;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 
 /**
  * @author Christopher Bryan Boyd
  */
-public class HelpCommand {
+public class TestUtil {
 
-	public HelpCommand(BladeCLI blade, HelpCommandArgs args) throws Exception {
-		_blade = blade;
-		_args = args;
+	public static String runBlade(String... args) throws UnsupportedEncodingException {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+		PrintStream ps = new PrintStream(baos);
+
+		new BladeNoFail(ps).run(args);
+
+		String content = baos.toString();
+
+		return content;
 	}
-
-	public void execute() throws Exception {
-		String commandName = _args.getName();
-
-		if (Objects.nonNull(commandName) && (commandName.length() > 0)) {
-			_blade.printUsage(commandName);
-		}
-		else {
-			_blade.printUsage();
-		}
-	}
-
-	private HelpCommandArgs _args;
-	private BladeCLI _blade;
 
 }

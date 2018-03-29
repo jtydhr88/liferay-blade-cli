@@ -20,9 +20,7 @@ import aQute.bnd.osgi.Jar;
 import aQute.bnd.osgi.Processor;
 import aQute.bnd.osgi.Resource;
 
-import aQute.lib.getopt.Options;
 import aQute.lib.io.IO;
-import aQute.lib.justif.Justif;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -31,16 +29,19 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.PrintStream;
 
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.Formatter;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -89,7 +90,9 @@ public class Util {
 
 	public static void copy(InputStream in, File outputDir) throws Exception {
 		try (Jar jar = new Jar("dot", in)) {
-			for (Entry<String, Resource> e : jar.getResources().entrySet()) {
+			Map<String, Resource> resources = jar.getResources();
+
+			for (Entry<String, Resource> e : resources.entrySet()) {
 				String path = e.getKey();
 
 				Resource r = e.getValue();
@@ -208,6 +211,14 @@ public class Util {
 		return false;
 	}
 
+	public static boolean isDirEmpty(final Path directory) throws IOException {
+		try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(directory)) {
+			Iterator<Path> iterator = directoryStream.iterator();
+
+			return !iterator.hasNext();
+		}
+	}
+
 	public static boolean isEmpty(List<?> list) {
 		if ((list == null) || list.isEmpty()) {
 			return true;
@@ -243,7 +254,9 @@ public class Util {
 	public static boolean isWindows() {
 		String osName = System.getProperty("os.name");
 
-		return osName.toLowerCase().contains("windows");
+		osName = osName.toLowerCase();
+
+		return osName.contains("windows");
 	}
 
 	public static boolean isWorkspace(BladeCLI blade) {
@@ -262,7 +275,7 @@ public class Util {
 		try {
 			String script = read(gradleFile);
 
-			Matcher matcher = Workspace.PATTERN_WORKSPACE_PLUGIN.matcher(script);
+			Matcher matcher = Workspace.patternWorkspacePlugin.matcher(script);
 
 			if (matcher.find()) {
 				return true;
@@ -274,27 +287,13 @@ public class Util {
 
 				script = read(gradleFile);
 
-				matcher = Workspace.PATTERN_WORKSPACE_PLUGIN.matcher(script);
+				matcher = Workspace.patternWorkspacePlugin.matcher(script);
 
 				return matcher.find();
 			}
 		}
 		catch (Exception e) {
 			return false;
-		}
-	}
-
-	public static void printHelp(BladeCLI blade, Options options, String cmd, Class< ? extends Options> optionClass)
-		throws Exception {
-
-		Justif j = new Justif();
-
-		try (Formatter f = j.formatter()) {
-			options._command().help(f, null, cmd, optionClass);
-
-			j.wrap();
-
-			blade.err().println(f);
 		}
 	}
 
@@ -393,7 +392,9 @@ public class Util {
 			readProcessStream(process.getErrorStream(), blade.err());
 		}
 
-		process.getOutputStream().close();
+		OutputStream outputStream = process.getOutputStream();
+
+		outputStream.close();
 
 		return process;
 	}

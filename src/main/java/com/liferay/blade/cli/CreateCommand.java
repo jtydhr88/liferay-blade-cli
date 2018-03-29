@@ -20,12 +20,14 @@ import com.liferay.project.templates.ProjectTemplates;
 import com.liferay.project.templates.ProjectTemplatesArgs;
 
 import java.io.File;
+import java.io.PrintStream;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -50,6 +52,47 @@ public class CreateCommand {
 			return;
 		}
 
+		String template = _args.getTemplate();
+
+		if (template == null) {
+			_blade.err("The following option is required: [-t | --template]\n\n");
+			_blade.err("Availble project templates:\n\n");
+
+			_printTemplates();
+
+			return;
+		}
+
+		if (Objects.equals(_args.getTemplate(), "fragment")) {
+			boolean hasHostBundleBSN = false;
+
+			if (_args.getHostBundleBSN() != null) {
+				hasHostBundleBSN = true;
+			}
+
+			boolean hasHostBundleVersion = false;
+
+			if (_args.getHostBundleVersion() != null) {
+				hasHostBundleVersion = true;
+			}
+
+			if (!hasHostBundleBSN || !hasHostBundleVersion) {
+				StringBuilder sb = new StringBuilder("\"-t fragment\" options missing:" + System.lineSeparator());
+
+				if (!hasHostBundleBSN) {
+					sb.append("Host Bundle BSN (\"-h\", \"--host-bundle-bsn\") is required.");
+				}
+
+				if (!hasHostBundleVersion) {
+					sb.append("Host Bundle Version (\"-H\", \"--host-bundle-version\") is required.");
+				}
+
+				_blade.printUsage("create", sb.toString());
+
+				return;
+			}
+		}
+
 		String name = _args.getName();
 
 		if (Util.isEmpty(name)) {
@@ -57,12 +100,7 @@ public class CreateCommand {
 			return;
 		}
 
-		String template = _args.getTemplate();
-
-		if (template == null) {
-			template = "mvc-portlet";
-		}
-		else if (!_isExistingTemplate(template)) {
+		if (!_isExistingTemplate(template)) {
 			_addError("Create", "The template " + template + " is not in the list");
 
 			return;
@@ -70,8 +108,10 @@ public class CreateCommand {
 
 		File dir;
 
-		if (_args.getDir() != null) {
-			dir = new File(_args.getDir().getAbsolutePath());
+		File argsDir = _args.getDir();
+
+		if (argsDir != null) {
+			dir = new File(argsDir.getAbsolutePath());
 		}
 		else if (template.startsWith("war") || template.equals("theme") || template.equals("layout-template") ||
 				 template.equals("spring-mvc-portlet")) {
@@ -97,6 +137,7 @@ public class CreateCommand {
 		projectTemplatesArgs.setDestinationDir(dir.getAbsoluteFile());
 		projectTemplatesArgs.setHostBundleSymbolicName(_args.getHostBundleBSN());
 		projectTemplatesArgs.setHostBundleVersion(_args.getHostBundleVersion());
+		projectTemplatesArgs.setLiferayVersion(_args.getLiferayVersion());
 		projectTemplatesArgs.setName(name);
 		projectTemplatesArgs.setPackageName(_args.getPackageName());
 		projectTemplatesArgs.setService(_args.getService());
@@ -109,12 +150,12 @@ public class CreateCommand {
 
 		execute(projectTemplatesArgs);
 
-		_blade.out().println(
-			"Successfully created project " + projectTemplatesArgs.getName() + " in " + dir.getAbsolutePath());
+		_blade.out("Successfully created project " + projectTemplatesArgs.getName() + " in " + dir.getAbsolutePath());
 	}
 
 	protected CreateCommand(BladeCLI blade) {
 		_blade = blade;
+
 		_args = null;
 	}
 
@@ -169,7 +210,9 @@ public class CreateCommand {
 	}
 
 	private File _getDefaultModulesDir() throws Exception {
-		File baseDir = _blade.getBase().getAbsoluteFile();
+		File base = _blade.getBase();
+
+		File baseDir = base.getAbsoluteFile();
 
 		if (!Util.isWorkspace(baseDir)) {
 			return baseDir;
@@ -195,7 +238,9 @@ public class CreateCommand {
 	}
 
 	private File _getDefaultWarsDir() throws Exception {
-		File baseDir = _blade.getBase().getAbsoluteFile();
+		File base = _blade.getBase();
+
+		File baseDir = base.getAbsoluteFile();
 
 		if (!Util.isWorkspace(baseDir)) {
 			return baseDir;
@@ -254,9 +299,11 @@ public class CreateCommand {
 		int padLength = longestString.length() + 2;
 
 		for (String name : templateNames) {
-			_blade.out().print(StringUtils.rightPad(name, padLength));
+			PrintStream out = _blade.out();
 
-			_blade.out().println(templates.get(name));
+			out.print(StringUtils.rightPad(name, padLength));
+
+			_blade.out(templates.get(name));
 		}
 	}
 

@@ -17,32 +17,39 @@
 package com.liferay.blade.cli;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 
 import java.net.URL;
 
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Stream;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.text.WordUtils;
 
 /**
  * @author David Truong
  */
 public class SamplesCommand {
 
-	public SamplesCommand(BladeCLI blade, SamplesCommandArgs options) throws Exception {
+	public SamplesCommand(BladeCLI blade, SamplesCommandArgs args) throws Exception {
 		_blade = blade;
-		_options = options;
+		_args = args;
 	}
 
 	public void execute() throws Exception {
-		final String sampleName = _options.getSampleName();
+		final String sampleName = _args.getSampleName();
 
 		if (_downloadBladeRepoIfNeeded()) {
 			_extractBladeRepo();
@@ -65,7 +72,7 @@ public class SamplesCommand {
 	}
 
 	private void _copySample(String sampleName) throws Exception {
-		File workDir = _options.getDir();
+		File workDir = _args.getDir();
 
 		if (workDir == null) {
 			workDir = _blade.getBase();
@@ -75,13 +82,25 @@ public class SamplesCommand {
 
 		File gradleSamples = new File(bladeRepo, "gradle");
 
+		SamplesVisitor visitor = new SamplesVisitor();
+
 		for (File file : gradleSamples.listFiles()) {
 			String fileName = file.getName();
 
-			if (file.isDirectory() && fileName.equals(sampleName)) {
+			if (file.isDirectory() && _topLevelFolders.contains(fileName)) {
+				Files.walkFileTree(file.toPath(), visitor);
+			}
+		}
+
+		for (Path path : visitor.getPaths()) {
+			File file = path.toFile();
+
+			String fileName = file.getName();
+
+			if (Files.isDirectory(path) && fileName.equals(sampleName)) {
 				File dest = new File(workDir, fileName);
 
-				FileUtils.copyDirectory(file, dest);
+				FileUtils.copyDirectory(path.toFile(), dest);
 
 				_updateBuildGradle(dest);
 
@@ -118,24 +137,56 @@ public class SamplesCommand {
 		Util.unzip(bladeRepoArchive, _blade.getCacheDir(), null);
 	}
 
-	private void _listSamples() {
+	private void _listSamples() throws IOException {
 		File bladeRepo = new File(_blade.getCacheDir(), _BLADE_REPO_NAME);
 
 		File gradleSamples = new File(bladeRepo, "gradle");
 
-		List<String> samples = new ArrayList<>();
+		Map<String, List<Path>> samplesMap = new HashMap<>();
 
 		for (File file : gradleSamples.listFiles()) {
 			String fileName = file.getName();
 
-			if (file.isDirectory() && fileName.startsWith("blade.")) {
-				samples.add(fileName);
+			if (file.isDirectory() && _topLevelFolders.contains(fileName)) {
+				SamplesVisitor visitor = new SamplesVisitor();
+
+				Files.walkFileTree(file.toPath(), visitor);
+
+				List<Path> samples = samplesMap.get(fileName);
+
+				if (samples == null) {
+					samples = new ArrayList<>();
+
+					samplesMap.put(fileName, samples);
+				}
+
+				for (Path path : visitor.getPaths()) {
+					samples.add(path.getFileName());
+				}
+
+				if (samplesMap.containsKey(fileName)) {
+					Collections.sort(samples);
+				}
 			}
 		}
 
-		_blade.out().println("Please provide the sample project name to create, e.g. \"blade samples blade.rest\"\n");
-		_blade.out().println("Currently available samples:");
-		_blade.out().println(WordUtils.wrap(StringUtils.join(samples, ", "), 80));
+		_blade.out("Please provide the sample project name to create, e.g. \"blade samples jsp-portlet\"\n");
+		_blade.out("Currently available categories and samples:");
+
+		Set<String> keySet = samplesMap.keySet();
+
+		Stream<String> stream = keySet.stream();
+
+		stream.sorted(
+		).peek(
+			category -> _blade.out("\t " + category + ":")
+		).map(
+			samplesMap::get
+		).flatMap(
+			category -> category.stream()
+		).forEach(
+			sample -> _blade.out("\t\t " + sample)
+		);
 	}
 
 	private String _parseGradleScript(String script, String section, boolean contentsOnly) {
@@ -234,15 +285,18 @@ public class SamplesCommand {
 		Files.write(sampleGradleFile.toPath(), script.getBytes());
 	}
 
-	private static final String _BLADE_REPO_ARCHIVE_NAME = "liferay-blade-samples-2.x.zip";
+	private static final String _BLADE_REPO_ARCHIVE_NAME = "liferay-blade-samples-master.zip";
 
-	private static final String _BLADE_REPO_NAME = "liferay-blade-samples-2.x";
+	private static final String _BLADE_REPO_NAME = "liferay-blade-samples-master";
 
-	private static final String _BLADE_REPO_URL = "https://github.com/liferay/liferay-blade-samples/archive/2.x.zip";
+	private static final String _BLADE_REPO_URL = "https://github.com/liferay/liferay-blade-samples/archive/master.zip";
 
 	private static final long _FILE_EXPIRATION_TIME = 604800000;
 
+	private static final Collection<String> _topLevelFolders = Arrays.asList(
+		"apps", "extensions", "overrides", "themes");
+
+	private final SamplesCommandArgs _args;
 	private final BladeCLI _blade;
-	private final SamplesCommandArgs _options;
 
 }

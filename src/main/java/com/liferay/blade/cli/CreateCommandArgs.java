@@ -54,6 +54,10 @@ public class CreateCommandArgs extends BaseArgs {
 		return _hostBundleVersion;
 	}
 
+	public String getLiferayVersion() {
+		return _liferayVersion;
+	}
+
 	public String getName() {
 		return _name;
 	}
@@ -100,16 +104,21 @@ public class CreateCommandArgs extends BaseArgs {
 	private File _dir;
 
 	@Parameter(
-		description = "If a new jsp hook fragment needs to be created, provide the name of the host bundle symbolic name.",
+		description = "If a new jsp hook fragment needs to be created, provide the name of the host bundle symbolic name. Required for \"-t fragment\".",
 		names = {"-h", "--host-bundle-bsn"}
 	)
 	private String _hostBundleBSN;
 
 	@Parameter(
-		description = "If a new jsp hook fragment needs to be created, provide the name of the host bundle version.",
+		description = "If a new jsp hook fragment needs to be created, provide the name of the host bundle version. Required for \"-t fragment\".",
 		names = {"-H", "--host-bundle-version"}
 	)
 	private String _hostBundleVersion;
+
+	@Parameter(
+		description = "The version of Liferay to target when creating the project.", names = {"-v", "--liferay-version"}
+	)
+	private String _liferayVersion = "7.0";
 
 	@Parameter(description = "Prints a list of available project templates", names = {"-l", "--list-templates"})
 	private boolean _listTemplates;
@@ -117,7 +126,7 @@ public class CreateCommandArgs extends BaseArgs {
 	@Parameter(description = "The project name")
 	private String _name;
 
-	@Parameter(names = {"-p", "--package-name"})
+	@Parameter(description = "The Java package to use when generating Java source.", names = {"-p", "--package-name"})
 	private String _packageName;
 
 	@Parameter(

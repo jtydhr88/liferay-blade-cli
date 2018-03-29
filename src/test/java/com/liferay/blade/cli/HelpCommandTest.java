@@ -16,8 +16,6 @@
 
 package com.liferay.blade.cli;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 
 import org.junit.Assert;
@@ -33,6 +31,17 @@ public class HelpCommandTest {
 		String content = _runBlade("help");
 
 		Assert.assertTrue(content, content.contains("Usage:"));
+
+		Assert.assertFalse(content, content.contains("--"));
+	}
+
+	@Test
+	public void testHelpCommandSpecific() throws UnsupportedEncodingException {
+		String content = _runBlade("help", "create");
+
+		Assert.assertTrue(content, content.contains("Usage:"));
+
+		Assert.assertTrue(content, content.contains("--"));
 	}
 
 	@Test
@@ -43,13 +52,7 @@ public class HelpCommandTest {
 	}
 
 	private static String _runBlade(String... args) throws UnsupportedEncodingException {
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-		PrintStream ps = new PrintStream(baos);
-
-		new BladeNoFail(ps).run(args);
-
-		String content = baos.toString();
+		String content = TestUtil.runBlade(args);
 
 		Assert.assertFalse(content, content.contains("No such command"));
 

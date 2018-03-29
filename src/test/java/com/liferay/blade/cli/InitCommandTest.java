@@ -215,7 +215,7 @@ public class InitCommandTest {
 
 		String contents = new String(Files.readAllBytes(new File(newproject, "settings.gradle").toPath()));
 
-		Assert.assertTrue(contents, contents.contains("1.7.1"));
+		Assert.assertTrue(contents, contents.contains("1.9.0"));
 	}
 
 	@Test
@@ -363,7 +363,7 @@ public class InitCommandTest {
 	private void _createBundle() throws Exception {
 		String projectPath = "build/test/workspace/modules";
 
-		String[] args = {"create", "-d", projectPath, "foo"};
+		String[] args = {"create", "-t", "mvc-portlet", "-d", projectPath, "foo"};
 
 		new BladeNoFail().run(args);
 
@@ -378,7 +378,7 @@ public class InitCommandTest {
 	private void _createMavenBundle() throws Exception {
 		String projectPath = "build/test/workspace/modules";
 
-		String[] args = {"create", "-d", projectPath, "-b", "maven", "foo"};
+		String[] args = {"create", "-t", "mvc-portlet", "-d", projectPath, "-b", "maven", "foo"};
 
 		new BladeNoFail().run(args);
 

@@ -26,11 +26,9 @@ import com.liferay.project.templates.ProjectTemplates;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.PrintStream;
 import java.io.Writer;
 
 import java.util.ArrayList;
@@ -214,6 +212,28 @@ public class CreateCommandTest {
 		MavenRunnerUtil.executeMavenPackage(projectPath, new String[] {"clean", "package"});
 		MavenRunnerUtil.verifyBuildOutput(projectPath, "loginHook-1.0.0.jar");
 		_verifyImportPackage(new File(projectPath + "/target/loginHook-1.0.0.jar"));
+	}
+
+	@Test
+	public void testCreateFragmentWithoutHostOptions() throws Exception {
+		String[] args = {"create", "-d", "build/test", "-t", "fragment", "loginHook"};
+
+		String content = TestUtil.runBlade(args);
+
+		Assert.assertTrue(content, content.contains("\"-t fragment\" options missing"));
+
+		args = new String[]
+			{"create", "-d", "build/test", "-t", "fragment", "-h", "com.liferay.login.web", "loginHook"};
+
+		content = TestUtil.runBlade(args);
+
+		Assert.assertTrue(content, content.contains("\"-t fragment\" options missing"));
+
+		args = new String[] {"create", "-d", "build/test", "-t", "fragment", "-H", "1.0.0", "loginHook"};
+
+		content = TestUtil.runBlade(args);
+
+		Assert.assertTrue(content, content.contains("\"-t fragment\" options missing"));
 	}
 
 	@Test
@@ -546,7 +566,7 @@ public class CreateCommandTest {
 
 	@Test
 	public void testCreateGradleSymbolicName() throws Exception {
-		String[] args = {"create", "-d", "build/test", "-p", "foo.bar", "barfoo"};
+		String[] args = {"create", "-t", "mvc-portlet", "-d", "build/test", "-p", "foo.bar", "barfoo"};
 
 		new BladeNoFail().run(args);
 
@@ -563,6 +583,17 @@ public class CreateCommandTest {
 		GradleRunnerUtil.verifyBuildOutput(projectPath, "foo.bar-1.0.0.jar");
 
 		_verifyImportPackage(new File(projectPath + "/build/libs/foo.bar-1.0.0.jar"));
+	}
+
+	@Test
+	public void testCreateMissingArgument() throws Exception {
+		String[] args = {"create", "foobar"};
+
+		String content = TestUtil.runBlade(args);
+
+		boolean containsError = content.contains("The following option is required");
+
+		Assert.assertTrue(containsError);
 	}
 
 	@Test
@@ -706,7 +737,7 @@ public class CreateCommandTest {
 
 	@Test
 	public void testCreateProjectAllDefaults() throws Exception {
-		String[] args = {"create", "-d", "build/test", "hello-world-portlet"};
+		String[] args = {"create", "-d", "build/test", "-t", "mvc-portlet", "hello-world-portlet"};
 
 		new BladeNoFail().run(args);
 
@@ -740,7 +771,7 @@ public class CreateCommandTest {
 
 	@Test
 	public void testCreateProjectWithRefresh() throws Exception {
-		String[] args = {"create", "-d", "build/test", "hello-world-refresh"};
+		String[] args = {"create", "-d", "build/test", "-t", "mvc-portlet", "hello-world-refresh"};
 
 		new BladeNoFail().run(args);
 
@@ -1165,7 +1196,7 @@ public class CreateCommandTest {
 
 	@Test
 	public void testCreateWorkspaceModuleLocation() throws Exception {
-		String[] args = {"--base", "build/test/workspace", "create", "foo"};
+		String[] args = {"--base", "build/test/workspace", "create", "-t", "mvc-portlet", "foo"};
 
 		File workspace = new File("build/test/workspace");
 
@@ -1198,7 +1229,7 @@ public class CreateCommandTest {
 
 	@Test
 	public void testCreateWorkspaceProjectAllDefaults() throws Exception {
-		String[] args = {"create", "-d", "build/test/workspace/modules/apps", "foo"};
+		String[] args = {"create", "-d", "build/test/workspace/modules/apps", "-t", "mvc-portlet", "foo"};
 
 		File workspace = new File("build/test/workspace");
 
@@ -1231,7 +1262,7 @@ public class CreateCommandTest {
 
 	@Test
 	public void testCreateWorkspaceProjectWithRefresh() throws Exception {
-		String[] args = {"create", "-d", "build/test/workspace/modules/apps", "foo-refresh"};
+		String[] args = {"create", "-d", "build/test/workspace/modules/apps", "-t", "mvc-portlet", "foo-refresh"};
 
 		File workspace = new File("build/test/workspace");
 
@@ -1312,18 +1343,34 @@ public class CreateCommandTest {
 	}
 
 	@Test
+	public void testLiferayVersion() throws Exception {
+		String[] sevenZeroArgs = {"--base", "build/test", "create", "-t", "npm-angular-portlet", "seven-zero"};
+
+		new BladeNoFail().run(sevenZeroArgs);
+
+		File npmbundlerrc = new File("build/test/seven-zero/build.gradle");
+
+		String content = new String(IO.read(npmbundlerrc));
+
+		Assert.assertFalse(content.contains("js.loader.modules.extender.api"));
+
+		String[] sevenOneArgs =
+			{"--base", "build/test", "create", "-t", "npm-angular-portlet", "-v", "7.1", "seven-one"};
+
+		new BladeNoFail().run(sevenOneArgs);
+
+		npmbundlerrc = new File("build/test/seven-one/build.gradle");
+
+		content = new String(IO.read(npmbundlerrc));
+
+		Assert.assertTrue(content.contains("js.loader.modules.extender.api"));
+	}
+
+	@Test
 	public void testListTemplates() throws Exception {
 		String[] args = {"create", "-l"};
 
-		ByteArrayOutputStream output = new ByteArrayOutputStream();
-
-		PrintStream ps = new PrintStream(output);
-
-		BladeCLI blade = new BladeNoFail(ps);
-
-		blade.run(args);
-
-		String templateList = new String(output.toByteArray());
+		String templateList = TestUtil.runBlade(args);
 
 		List<String> templateNames = new ArrayList<>(ProjectTemplates.getTemplates().keySet());
 
