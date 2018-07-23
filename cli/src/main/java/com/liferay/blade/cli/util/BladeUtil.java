@@ -56,11 +56,16 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.function.Predicate;
+import java.util.jar.Attributes;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
+
+import org.apache.maven.artifact.versioning.ComparableVersion;
 
 /**
  * @author Gregory Amerson
@@ -73,32 +78,10 @@ public class BladeUtil {
 	public static final String APP_SERVER_TYPE_PROPERTY = "app.server.type";
 
 	public static boolean canConnect(String host, int port) {
-		InetSocketAddress address = new InetSocketAddress(host, Integer.valueOf(port));
-		InetSocketAddress local = new InetSocketAddress(0);
+		InetSocketAddress localAddress = new InetSocketAddress(0);
+		InetSocketAddress remoteAddress = new InetSocketAddress(host, Integer.valueOf(port));
 
-		InputStream in = null;
-
-		try (Socket socket = new Socket()) {
-			socket.bind(local);
-			socket.connect(address, 3000);
-
-			in = socket.getInputStream();
-
-			return true;
-		}
-		catch (Exception e) {
-		}
-		finally {
-			if (in != null) {
-				try {
-					in.close();
-				}
-				catch (Exception e) {
-				}
-			}
-		}
-
-		return false;
+		return _canConnect(localAddress, remoteAddress);
 	}
 
 	public static void copy(InputStream in, File outputDir) throws Exception {
@@ -125,6 +108,40 @@ public class BladeUtil {
 		}
 	}
 
+	public static boolean dependencyManagerEnable(File dir) {
+		File settingGradle = getSettingGradleFile(dir);
+
+		if ((settingGradle == null) || !isWorkspace(dir)) {
+			return false;
+		}
+
+		try {
+			String settingScript = read(settingGradle);
+
+			Matcher matcher = WorkspaceConstants.patternGradleWorkspacePlugin.matcher(settingScript);
+
+			if (!matcher.find()) {
+				return false;
+			}
+
+			String pluginVersion = matcher.group(1);
+
+			ComparableVersion currentVersion = new ComparableVersion(pluginVersion);
+
+			ComparableVersion minSupportVersion = new ComparableVersion("1.9.2");
+
+			int result = currentVersion.compareTo(minSupportVersion);
+
+			if (result >= 0) {
+				return true;
+			}
+		}
+		catch (Exception e) {
+		}
+
+		return false;
+	}
+
 	public static void downloadGithubProject(String url, Path target) throws IOException {
 		String zipUrl = url + "/archive/master.zip";
 
@@ -145,6 +162,14 @@ public class BladeUtil {
 	public static File findParentFile(File dir, String[] fileNames, boolean checkParents) {
 		if (dir == null) {
 			return null;
+		}
+		else if (".".equals(dir.toString()) || !dir.isAbsolute()) {
+			try {
+				dir = dir.getCanonicalFile();
+			}
+			catch (Exception e) {
+				dir = dir.getAbsoluteFile();
+			}
 		}
 
 		for (String fileName : fileNames) {
@@ -178,6 +203,10 @@ public class BladeUtil {
 		return properties;
 	}
 
+	public static String getBundleVersion(Path pathToJar) throws IOException {
+		return getManifestProperty(pathToJar, "Bundle-Version");
+	}
+
 	public static Properties getGradleProperties(File dir) {
 		File file = getGradlePropertiesFile(dir);
 
@@ -205,6 +234,18 @@ public class BladeUtil {
 		return null;
 	}
 
+	public static String getManifestProperty(Path pathToJar, String propertyName) throws IOException {
+		File file = pathToJar.toFile();
+
+		try (JarFile jar = new JarFile(file)) {
+			Manifest manifest = jar.getManifest();
+
+			Attributes attributes = manifest.getMainAttributes();
+
+			return attributes.getValue("Bundle-Version");
+		}
+	}
+
 	public static Properties getProperties(File file) {
 		try (InputStream inputStream = new FileInputStream(file)) {
 			Properties properties = new Properties();
@@ -216,6 +257,12 @@ public class BladeUtil {
 		catch (Exception e) {
 			return null;
 		}
+	}
+
+	public static File getSettingGradleFile(File dir) {
+		File settingGradleFile = new File(getWorkspaceDir(dir), _SETTINGS_GRADLE_FILE_NAME);
+
+		return settingGradleFile;
 	}
 
 	public static Collection<String> getTemplateNames() throws Exception {
@@ -334,10 +381,14 @@ public class BladeUtil {
 	public static boolean isWorkspace(File dir) {
 		File workspaceDir = getWorkspaceDir(dir);
 
-		File gradleFile = new File(workspaceDir, _SETTINGS_GRADLE_FILE_NAME);
+		return isWorkspaceDir(workspaceDir);
+	}
+
+	public static boolean isWorkspaceDir(File dir) {
+		File gradleFile = new File(dir, _SETTINGS_GRADLE_FILE_NAME);
 
 		if (!gradleFile.exists()) {
-			File pomFile = new File(workspaceDir, "pom.xml");
+			File pomFile = new File(dir, "pom.xml");
 
 			if (_isWorkspacePomFile(pomFile)) {
 				return true;
@@ -357,7 +408,7 @@ public class BladeUtil {
 			else {
 				//For workspace plugin < 1.0.5
 
-				gradleFile = new File(workspaceDir, _BUILD_GRADLE_FILE_NAME);
+				gradleFile = new File(dir, _BUILD_GRADLE_FILE_NAME);
 
 				script = read(gradleFile);
 
@@ -575,6 +626,26 @@ public class BladeUtil {
 				}
 			}
 		}
+	}
+
+	private static boolean _canConnect(InetSocketAddress localAddress, InetSocketAddress remoteAddress) {
+		boolean connected = false;
+
+		try (Socket socket = new Socket()) {
+			socket.bind(localAddress);
+			socket.connect(remoteAddress, 3000);
+			socket.getInputStream();
+
+			connected = true;
+		}
+		catch (IOException ioe) {
+		}
+
+		if (connected) {
+			return true;
+		}
+
+		return false;
 	}
 
 	private static boolean _isSafelyRelative(File file, File destDir) {

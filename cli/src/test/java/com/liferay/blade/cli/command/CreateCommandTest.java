@@ -27,6 +27,7 @@ import com.liferay.blade.cli.GradleRunnerUtil;
 import com.liferay.blade.cli.MavenRunnerUtil;
 import com.liferay.blade.cli.TestUtil;
 import com.liferay.blade.cli.util.BladeUtil;
+import com.liferay.blade.cli.util.FileUtil;
 import com.liferay.project.templates.ProjectTemplates;
 
 import java.io.BufferedReader;
@@ -36,6 +37,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.Writer;
 
+import java.nio.file.Paths;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +47,6 @@ import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.regex.Pattern;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import org.gradle.testkit.runner.BuildTask;
@@ -89,7 +91,7 @@ public class CreateCommandTest {
 
 		_verifyImportPackage(new File(projectPath, "build/libs/bar.activator-1.0.0.jar"));
 
-		FileUtils.deleteDirectory(IO.getFile(projectPath));
+		FileUtil.deleteDir(Paths.get(projectPath));
 
 		new BladeTest().run(mavenArgs);
 
@@ -134,7 +136,7 @@ public class CreateCommandTest {
 			Assert.assertEquals("foo.api;version=\"1.0.0\"", mainAttributes.getValue("Export-Package"));
 		}
 
-		FileUtils.deleteDirectory(IO.getFile(projectPath));
+		FileUtil.deleteDir(Paths.get(projectPath));
 
 		new BladeTest().run(mavenArgs);
 
@@ -192,7 +194,7 @@ public class CreateCommandTest {
 
 		_verifyImportPackage(new File(projectPath, "build/libs/loginhook-1.0.0.jar"));
 
-		FileUtils.deleteDirectory(IO.getFile(projectPath));
+		FileUtil.deleteDir(Paths.get(projectPath));
 
 		new BladeTest().run(mavenArgs);
 
@@ -634,7 +636,7 @@ public class CreateCommandTest {
 
 		_verifyImportPackage(new File(projectPath, "build/libs/foo-1.0.0.jar"));
 
-		FileUtils.deleteDirectory(IO.getFile(projectPath));
+		FileUtil.deleteDir(Paths.get(projectPath));
 
 		new BladeTest().run(mavenArgs);
 
@@ -669,9 +671,9 @@ public class CreateCommandTest {
 
 		File jsp = _checkFileExists(projectPath + "/src/main/resources/META-INF/resources/view.jsp");
 
-		_contains(jsp, ".*<aui:script require=\"npmangular@1.0.0\">.*");
+		_contains(jsp, ".*<aui:script require=\"<%= bootstrapRequire %>\">.*");
 
-		_contains(jsp, ".*npmangular100.default.*");
+		_contains(jsp, ".*bootstrapRequire.default.*");
 	}
 
 	@Test
@@ -1445,7 +1447,7 @@ public class CreateCommandTest {
 		File tempRoot = temporaryFolder.getRoot();
 
 		String[] sevenZeroArgs =
-			{"--base", tempRoot.getAbsolutePath(), "create", "-t", "npm-angular-portlet", "seven-zero"};
+			{"--base", tempRoot.getAbsolutePath(), "create", "-t", "npm-angular-portlet", "-v", "7.0", "seven-zero"};
 
 		new BladeTest().run(sevenZeroArgs);
 
@@ -1456,7 +1458,7 @@ public class CreateCommandTest {
 		Assert.assertFalse(content.contains("js.loader.modules.extender.api"));
 
 		String[] sevenOneArgs =
-			{"--base", tempRoot.getAbsolutePath(), "create", "-t", "npm-angular-portlet", "-v", "7.1", "seven-one"};
+			{"--base", tempRoot.getAbsolutePath(), "create", "-t", "npm-angular-portlet", "seven-one"};
 
 		new BladeTest().run(sevenOneArgs);
 

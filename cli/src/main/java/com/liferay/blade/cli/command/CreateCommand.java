@@ -137,17 +137,7 @@ public class CreateCommand extends BaseCommand<CreateArgs> {
 
 		File argsDir = createArgs.getDir();
 
-		if (argsDir != null) {
-			dir = new File(argsDir.getAbsolutePath());
-		}
-		else if (template.startsWith("war") || template.equals("theme") || template.equals("layout-template") ||
-				 template.equals("spring-mvc-portlet")) {
-
-			dir = _getDefaultWarsDir();
-		}
-		else {
-			dir = _getDefaultModulesDir();
-		}
+		dir = _getFinalDir(argsDir, template);
 
 		final File checkDir = new File(dir, name);
 
@@ -162,6 +152,7 @@ public class CreateCommand extends BaseCommand<CreateArgs> {
 		projectTemplatesArgs.setClassName(createArgs.getClassname());
 		projectTemplatesArgs.setContributorType(createArgs.getContributorType());
 		projectTemplatesArgs.setDestinationDir(dir.getAbsoluteFile());
+		projectTemplatesArgs.setDependencyManagementEnabled(BladeUtil.dependencyManagerEnable(dir));
 		projectTemplatesArgs.setHostBundleSymbolicName(createArgs.getHostBundleBSN());
 		projectTemplatesArgs.setHostBundleVersion(createArgs.getHostBundleVersion());
 		projectTemplatesArgs.setLiferayVersion(createArgs.getLiferayVersion());
@@ -234,18 +225,38 @@ public class CreateCommand extends BaseCommand<CreateArgs> {
 		getBladeCLI().addErrors(prefix, Collections.singleton(msg));
 	}
 
-	private File _getDefaultModulesDir() throws Exception {
+	private File _getDirForTemplate(File dir, String template) throws Exception {
+		if (template.startsWith("war") || template.equals("theme") || template.equals("layout-template") ||
+			template.equals("spring-mvc-portlet")) {
+
+			return _getWarsDir(dir);
+		}
+		else {
+			return _getModulesDir(dir);
+		}
+	}
+
+	private File _getFinalDir(File argsDir, String template) throws Exception {
 		BladeCLI bladeCLI = getBladeCLI();
 
-		File base = bladeCLI.getBase();
+		if (argsDir == null) {
+			File base = bladeCLI.getBase();
 
-		File baseDir = base.getAbsoluteFile();
+			File baseDir = base.getAbsoluteFile();
 
-		if (!BladeUtil.isWorkspace(baseDir)) {
-			return baseDir;
+			return _getDirForTemplate(baseDir, template);
+		}
+		else {
+			return _getDirForTemplate(argsDir.getAbsoluteFile(), template);
+		}
+	}
+
+	private File _getModulesDir(File dir) throws Exception {
+		if (!BladeUtil.isWorkspaceDir(dir)) {
+			return dir;
 		}
 
-		Properties properties = BladeUtil.getGradleProperties(baseDir);
+		Properties properties = BladeUtil.getGradleProperties(dir);
 
 		String modulesDirValue = (String)properties.get(WorkspaceConstants.DEFAULT_MODULES_DIR_PROPERTY);
 
@@ -253,29 +264,23 @@ public class CreateCommand extends BaseCommand<CreateArgs> {
 			modulesDirValue = WorkspaceConstants.DEFAULT_MODULES_DIR;
 		}
 
-		File projectDir = BladeUtil.getWorkspaceDir(bladeCLI);
+		File projectDir = BladeUtil.getWorkspaceDir(dir);
 
 		File modulesDir = new File(projectDir, modulesDirValue);
 
-		if (_containsDir(baseDir, modulesDir)) {
-			return baseDir;
+		if (_containsDir(dir, modulesDir)) {
+			return dir;
 		}
 
 		return modulesDir;
 	}
 
-	private File _getDefaultWarsDir() throws Exception {
-		BladeCLI bladeCLI = getBladeCLI();
-
-		File base = bladeCLI.getBase();
-
-		File baseDir = base.getAbsoluteFile();
-
-		if (!BladeUtil.isWorkspace(baseDir)) {
-			return baseDir;
+	private File _getWarsDir(File dir) throws Exception {
+		if (!BladeUtil.isWorkspaceDir(dir)) {
+			return dir;
 		}
 
-		Properties properties = BladeUtil.getGradleProperties(baseDir);
+		Properties properties = BladeUtil.getGradleProperties(dir);
 
 		String warsDirValue = (String)properties.get(WorkspaceConstants.DEFAULT_WARS_DIR_PROPERTY);
 
@@ -287,12 +292,12 @@ public class CreateCommand extends BaseCommand<CreateArgs> {
 			warsDirValue = warsDirValue.split(",")[0];
 		}
 
-		File projectDir = BladeUtil.getWorkspaceDir(bladeCLI);
+		File projectDir = BladeUtil.getWorkspaceDir(dir);
 
 		File warsDir = new File(projectDir, warsDirValue);
 
-		if (_containsDir(baseDir, warsDir)) {
-			return baseDir;
+		if (_containsDir(dir, warsDir)) {
+			return dir;
 		}
 
 		return warsDir;

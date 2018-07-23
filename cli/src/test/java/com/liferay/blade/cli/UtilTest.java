@@ -16,13 +16,17 @@
 
 package com.liferay.blade.cli;
 
+import aQute.lib.io.IO;
+
 import com.liferay.blade.cli.util.BladeUtil;
+import com.liferay.blade.cli.util.FileUtil;
 
 import java.io.File;
 
 import java.nio.file.Files;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 
 import org.junit.Assert;
@@ -50,6 +54,56 @@ public class UtilTest {
 		List<Properties> propertiesList = BladeUtil.getAppServerProperties(dir);
 
 		Assert.assertTrue(propertiesList.size() == 2);
+	}
+
+	@Test
+	public void testCopyEntireDirectory() throws Exception {
+		File testDir1 = temporaryFolder.newFolder("dir1");
+
+		File testFile1 = new File(testDir1, "1");
+		File testFile2 = new File(testDir1, "2");
+		File testFile3 = new File(testDir1, "3");
+
+		testFile1.createNewFile();
+		testFile2.createNewFile();
+		testFile3.createNewFile();
+
+		File testDir2 = new File(temporaryFolder.getRoot(), "dir2");
+
+		FileUtil.copyDir(testDir1.toPath(), testDir2.toPath());
+		Assert.assertTrue(testDir2.exists());
+
+		Assert.assertEquals(testDir1.list().length, testDir2.list().length);
+	}
+
+	@Test
+	public void testFindParentFile() throws Exception {
+		File tempTestFile = null;
+
+		try {
+			File parentDirectory = new File(".").getAbsoluteFile().getParentFile();
+
+			File parentParentDirectory = parentDirectory.getParentFile();
+
+			tempTestFile = new File(parentParentDirectory, "test.file");
+
+			if (tempTestFile.exists()) {
+				Assert.assertTrue(tempTestFile.delete());
+			}
+
+			Assert.assertTrue(tempTestFile.createNewFile());
+
+			File fileRelative = new File(".");
+
+			File foundFile = BladeUtil.findParentFile(fileRelative, new String[] {"test.file"}, true);
+
+			Assert.assertTrue(Objects.nonNull(foundFile));
+		}
+		finally {
+			if (tempTestFile != null) {
+				IO.delete(tempTestFile);
+			}
+		}
 	}
 
 	@Test
