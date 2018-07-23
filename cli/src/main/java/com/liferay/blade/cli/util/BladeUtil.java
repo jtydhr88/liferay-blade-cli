@@ -65,6 +65,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
+import org.apache.maven.artifact.versioning.ComparableVersion;
+
 /**
  * @author Gregory Amerson
  * @author David Truong
@@ -104,6 +106,40 @@ public class BladeUtil {
 				}
 			}
 		}
+	}
+
+	public static boolean dependencyManagerEnable(File dir) {
+		File settingGradle = getSettingGradleFile(dir);
+
+		if ((settingGradle == null) || !isWorkspace(dir)) {
+			return false;
+		}
+
+		try {
+			String settingScript = read(settingGradle);
+
+			Matcher matcher = WorkspaceConstants.patternGradleWorkspacePlugin.matcher(settingScript);
+
+			if (!matcher.find()) {
+				return false;
+			}
+
+			String pluginVersion = matcher.group(1);
+
+			ComparableVersion currentVersion = new ComparableVersion(pluginVersion);
+
+			ComparableVersion minSupportVersion = new ComparableVersion("1.9.2");
+
+			int result = currentVersion.compareTo(minSupportVersion);
+
+			if (result >= 0) {
+				return true;
+			}
+		}
+		catch (Exception e) {
+		}
+
+		return false;
 	}
 
 	public static void downloadGithubProject(String url, Path target) throws IOException {
@@ -223,6 +259,12 @@ public class BladeUtil {
 		}
 	}
 
+	public static File getSettingGradleFile(File dir) {
+		File settingGradleFile = new File(getWorkspaceDir(dir), _SETTINGS_GRADLE_FILE_NAME);
+
+		return settingGradleFile;
+	}
+
 	public static Collection<String> getTemplateNames() throws Exception {
 		Map<String, String> templates = getTemplates();
 
@@ -339,10 +381,14 @@ public class BladeUtil {
 	public static boolean isWorkspace(File dir) {
 		File workspaceDir = getWorkspaceDir(dir);
 
-		File gradleFile = new File(workspaceDir, _SETTINGS_GRADLE_FILE_NAME);
+		return isWorkspaceDir(workspaceDir);
+	}
+
+	public static boolean isWorkspaceDir(File dir) {
+		File gradleFile = new File(dir, _SETTINGS_GRADLE_FILE_NAME);
 
 		if (!gradleFile.exists()) {
-			File pomFile = new File(workspaceDir, "pom.xml");
+			File pomFile = new File(dir, "pom.xml");
 
 			if (_isWorkspacePomFile(pomFile)) {
 				return true;
@@ -362,7 +408,7 @@ public class BladeUtil {
 			else {
 				//For workspace plugin < 1.0.5
 
-				gradleFile = new File(workspaceDir, _BUILD_GRADLE_FILE_NAME);
+				gradleFile = new File(dir, _BUILD_GRADLE_FILE_NAME);
 
 				script = read(gradleFile);
 
