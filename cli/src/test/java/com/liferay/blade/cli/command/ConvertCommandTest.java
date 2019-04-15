@@ -238,8 +238,8 @@ public class ConvertCommandTest {
 	}
 
 	@Test
-	public void testReadLiferayPlguinPackageProperties() throws Exception {
-		File projectDir = _setupWorkspace("readLiferayPlguinPackageProperties");
+	public void testReadLiferayPluginPackageProperties() throws Exception {
+		File projectDir = _setupWorkspace("readLiferayPluginPackageProperties");
 
 		String[] args = {"--base", projectDir.getPath(), "convert", "sample-hibernate-portlet"};
 
