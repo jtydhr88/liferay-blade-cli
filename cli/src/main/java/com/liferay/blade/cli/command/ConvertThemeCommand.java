@@ -161,6 +161,9 @@ public class ConvertThemeCommand {
 		}
 		else {
 			_bladeCLI.error("blade exited with code: " + errCode);
+			if (errCode == 127) {
+				_bladeCLI.error("Please check whether Node.JS is installed");
+			}
 		}
 	}
 
