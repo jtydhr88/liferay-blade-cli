@@ -83,7 +83,7 @@ public class PropertiesCompletion {
 		String[] lines = null;
 
 		if (currentContent != null) {
-			lines = currentContent.split(System.lineSeparator());
+			lines = FileUtil.readLinesFromString(currentContent);
 		}
 		else {
 			lines = FileUtil.readLinesFromFile(_file);
