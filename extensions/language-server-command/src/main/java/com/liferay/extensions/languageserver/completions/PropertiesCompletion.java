@@ -17,22 +17,25 @@
 package com.liferay.extensions.languageserver.completions;
 
 import com.liferay.extensions.languageserver.properties.BladeProperties;
+import com.liferay.extensions.languageserver.properties.CoreLanguageProperties;
+import com.liferay.extensions.languageserver.properties.LiferayPluginPackageProperties;
 import com.liferay.extensions.languageserver.properties.LiferayWorkspaceGradleProperties;
 import com.liferay.extensions.languageserver.properties.PortalProperties;
 import com.liferay.extensions.languageserver.properties.PropertiesFile;
 import com.liferay.extensions.languageserver.properties.PropertyPair;
-import com.liferay.extensions.languageserver.properties.LiferayPluginPackageProperties;
-import com.liferay.extensions.languageserver.properties.CoreLanguageProperties;
 import com.liferay.extensions.languageserver.services.Service;
 import com.liferay.extensions.languageserver.util.FileUtil;
 
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 
 import java.net.URI;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -127,17 +130,27 @@ public class PropertiesCompletion {
 				);
 			}
 			else {
+				Properties props = new Properties();
+
+				try {
+					props.load(new FileReader(_file));
+				}
+				catch (IOException ioe) {
+				}
+
 				for (PropertyPair propertyPair : properties) {
 					String key = propertyPair.getKey();
 
-					String comment = propertyPair.getCommennt();
+					if (!props.containsKey(key)) {
+						String comment = propertyPair.getCommennt();
 
-					CompletionItem completionItem = new CompletionItem(key);
+						CompletionItem completionItem = new CompletionItem(key);
 
-					completionItem.setKind(CompletionItemKind.Property);
-					completionItem.setDetail(comment);
+						completionItem.setKind(CompletionItemKind.Property);
+						completionItem.setDetail(comment);
 
-					completionItems.add(completionItem);
+						completionItems.add(completionItem);
+					}
 				}
 			}
 		}

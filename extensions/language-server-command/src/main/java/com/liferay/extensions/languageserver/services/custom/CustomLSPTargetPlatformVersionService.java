@@ -28,9 +28,9 @@ import java.util.Properties;
 /**
  * @author Terry Jia
  */
-public class CustomTargetPlatformVersionService extends StringArrayService {
+public class CustomLSPTargetPlatformVersionService extends StringArrayService {
 
-	public CustomTargetPlatformVersionService(File file) {
+	public CustomLSPTargetPlatformVersionService(File file) {
 		super(file, new String[] {"7.0.6", "7.1.0", "7.1.1", "7.1.2", "7.1.3", "7.2.0"});
 	}
 

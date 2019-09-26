@@ -29,6 +29,7 @@ import java.io.InputStream;
 import java.lang.reflect.Constructor;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -46,6 +47,10 @@ public abstract class PropertiesFile extends LiferayLSPFile {
 
 	public boolean checkPossibleKeys() {
 		return false;
+	}
+
+	public List<String> checkPossibleValueKeys() {
+		return Collections.emptyList();
 	}
 
 	public List<PropertyPair> getProperties() {
@@ -80,7 +85,7 @@ public abstract class PropertiesFile extends LiferayLSPFile {
 					else if (value.equals("boolean") || value.equals("true") || value.equals("false")) {
 						valueService = new BooleanService(getFile());
 					}
-					else if (value.startsWith("Custom")) {
+					else if (value.startsWith("CustomLSP")) {
 						String className = "com.liferay.extensions.languageserver.services.custom." + value;
 
 						Class<?> serviceClass = Class.forName(className);

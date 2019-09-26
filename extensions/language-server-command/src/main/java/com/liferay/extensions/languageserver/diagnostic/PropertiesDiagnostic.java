@@ -17,12 +17,12 @@
 package com.liferay.extensions.languageserver.diagnostic;
 
 import com.liferay.extensions.languageserver.properties.BladeProperties;
+import com.liferay.extensions.languageserver.properties.CoreLanguageProperties;
+import com.liferay.extensions.languageserver.properties.LiferayPluginPackageProperties;
 import com.liferay.extensions.languageserver.properties.LiferayWorkspaceGradleProperties;
 import com.liferay.extensions.languageserver.properties.PortalProperties;
 import com.liferay.extensions.languageserver.properties.PropertiesFile;
 import com.liferay.extensions.languageserver.properties.PropertyPair;
-import com.liferay.extensions.languageserver.properties.LiferayPluginPackageProperties;
-import com.liferay.extensions.languageserver.properties.CoreLanguageProperties;
 import com.liferay.extensions.languageserver.services.Service;
 import com.liferay.extensions.languageserver.util.FileUtil;
 
@@ -106,43 +106,49 @@ public class PropertiesDiagnostic {
 						diagnostics.add(diagnostic);
 					}
 
-					if (!value.equals("")) {
-						for (PropertyPair propertyPair : properties) {
-							if (key.equals(propertyPair.getKey())) {
-								Service valueService = propertyPair.getValue();
+					List<String> checkPossibleValueKeys = propertiesFile.checkPossibleValueKeys();
 
-								if (valueService != null) {
-									try {
-										valueService.validate(StringEscapeUtils.unescapeJava(value));
-									}
-									catch (Exception e) {
-										int equalIndex = line.indexOf("=");
+					if (!value.equals("") && checkPossibleValueKeys.contains(key)) {
+						String[] values = value.split(",");
 
-										int valueStart = line.indexOf(value, equalIndex);
+						for (String v : values) {
+							for (PropertyPair propertyPair : properties) {
+								if (key.equals(propertyPair.getKey())) {
+									Service valueService = propertyPair.getValue();
 
-										Diagnostic diagnostic = new Diagnostic();
-
-										diagnostic.setSeverity(DiagnosticSeverity.Warning);
-										diagnostic.setRange(
-											new Range(
-												new Position(i, valueStart),
-												new Position(i, valueStart + value.length())));
-
-										String message = e.getMessage();
-
-										if (message != null) {
-											diagnostic.setMessage(message);
+									if (valueService != null) {
+										try {
+											valueService.validate(StringEscapeUtils.unescapeJava(v));
 										}
-										else {
-											diagnostic.setMessage("Validate failed on value \"" + value + "\"");
+										catch (Exception e) {
+											int equalIndex = line.indexOf("=");
+
+											int valueStart = line.indexOf(v, equalIndex);
+
+											Diagnostic diagnostic = new Diagnostic();
+
+											diagnostic.setSeverity(DiagnosticSeverity.Warning);
+											diagnostic.setRange(
+												new Range(
+													new Position(i, valueStart),
+													new Position(i, valueStart + v.length())));
+
+											String message = e.getMessage();
+
+											if (message != null) {
+												diagnostic.setMessage(message);
+											}
+											else {
+												diagnostic.setMessage("Validate failed on value \"" + v + "\"");
+											}
+
+											diagnostic.setSource("ex");
+
+											diagnostics.add(diagnostic);
 										}
 
-										diagnostic.setSource("ex");
-
-										diagnostics.add(diagnostic);
+										break;
 									}
-
-									break;
 								}
 							}
 						}

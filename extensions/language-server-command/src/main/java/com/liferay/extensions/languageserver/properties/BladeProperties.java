@@ -18,6 +18,9 @@ package com.liferay.extensions.languageserver.properties;
 
 import java.io.File;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * @author Terry Jia
  */
@@ -29,6 +32,10 @@ public class BladeProperties extends PropertiesFile {
 
 	public boolean checkPossibleKeys() {
 		return true;
+	}
+
+	public List<String> checkPossibleValueKeys() {
+		return Arrays.asList("liferay.version.default", "profile.name", "profile.prompt.disabled");
 	}
 
 	@Override

@@ -29,19 +29,23 @@ public class CoreLanguageProperties extends PropertiesFile {
 	}
 
 	public boolean checkPossibleKeys() {
-		return true;
+		return false;
 	}
 
 	@Override
 	public String getStorageFileName() {
-		return "/CoreLanguage.properties";
+		return "/core-language.properties";
 	}
 
 	@Override
 	public boolean match() {
 		String fileName = getFile().getName();
 
-		return fileName.equals("CoreLanguage.properties");
+		if (fileName.startsWith("Language") && fileName.endsWith(".properties")) {
+			return true;
+		}
+
+		return false;
 	}
 
 }

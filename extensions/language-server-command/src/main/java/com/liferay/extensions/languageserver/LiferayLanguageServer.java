@@ -76,7 +76,7 @@ public class LiferayLanguageServer implements LanguageServer {
 
 		CompletionOptions completionOptions = new CompletionOptions();
 
-		List<String> triggerCharacters = Arrays.asList("=");
+		List<String> triggerCharacters = Arrays.asList("=", ",");
 
 		completionOptions.setTriggerCharacters(triggerCharacters);
 

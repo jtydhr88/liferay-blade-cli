@@ -46,7 +46,7 @@ public class StringArrayService extends Service {
 			}
 		}
 
-		throw new Exception(value + " does not be in possible values.");
+		throw new Exception("\"" + value + "\" is not in possible values.");
 	}
 
 	private String[] _possibleValues;

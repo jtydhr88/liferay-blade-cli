@@ -18,6 +18,9 @@ package com.liferay.extensions.languageserver.properties;
 
 import java.io.File;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * @author Terry Jia
  */
@@ -29,6 +32,17 @@ public class LiferayWorkspaceGradleProperties extends PropertiesFile {
 
 	public boolean checkPossibleKeys() {
 		return true;
+	}
+
+	public List<String> checkPossibleValueKeys() {
+		return Arrays.asList(
+			"liferay.workspace.bundle.token.download", "liferay.workspace.bundle.token.force",
+			"liferay.workspace.default.repository.enabled", "liferay.workspace.environment",
+			"liferay.workspace.home.dir", "liferay.workspace.modules.default.repository.enabled",
+			"liferay.workspace.ext.dir", "liferay.workspace.modules.dir",
+			"liferay.workspace.modules.jsp.precompile.enabled", "liferay.workspace.plugins.sdk.dir",
+			"target.platform.index.sources", "liferay.workspace.target.platform.version",
+			"liferay.workspace.themes.dir", "liferay.workspace.themes.java.build", "liferay.workspace.wars.dir");
 	}
 
 	@Override
