@@ -31,8 +31,6 @@ public abstract class LiferayLSPFile {
 		return _file;
 	}
 
-	public abstract String getStorageFileName();
-
 	public abstract boolean match();
 
 	private File _file;

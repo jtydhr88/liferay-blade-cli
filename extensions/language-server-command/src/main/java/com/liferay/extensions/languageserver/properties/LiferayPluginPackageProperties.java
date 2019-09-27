@@ -25,16 +25,7 @@ import java.io.File;
 public class LiferayPluginPackageProperties extends PropertiesFile {
 
 	public LiferayPluginPackageProperties(File file) {
-		super(file);
-	}
-
-	public boolean checkPossibleKeys() {
-		return true;
-	}
-
-	@Override
-	public String getStorageFileName() {
-		return "/liferay-plugin-package.properties";
+		super(file, "/liferay-plugin-package-properties.json");
 	}
 
 	@Override

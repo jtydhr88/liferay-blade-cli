@@ -16,6 +16,8 @@ Private-Package:\
 	org.apache.commons.logging,\
 	org.apache.commons.logging.impl,\
 \
+	org.json,\
+\
 	org.eclipse.lsp4j,\
 	org.eclipse.lsp4j.adapters,\
 	org.eclipse.lsp4j.launch,\

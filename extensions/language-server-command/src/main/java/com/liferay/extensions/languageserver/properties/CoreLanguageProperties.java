@@ -25,16 +25,11 @@ import java.io.File;
 public class CoreLanguageProperties extends PropertiesFile {
 
 	public CoreLanguageProperties(File file) {
-		super(file);
+		super(file, "/core-language-properties.json");
 	}
 
 	public boolean checkPossibleKeys() {
 		return false;
-	}
-
-	@Override
-	public String getStorageFileName() {
-		return "/core-language.properties";
 	}
 
 	@Override

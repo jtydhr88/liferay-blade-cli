@@ -24,16 +24,7 @@ import java.io.File;
 public class PortalProperties extends PropertiesFile {
 
 	public PortalProperties(File file) {
-		super(file);
-	}
-
-	public boolean checkPossibleKeys() {
-		return true;
-	}
-
-	@Override
-	public String getStorageFileName() {
-		return "/portal.properties";
+		super(file, "/portal-properties.json");
 	}
 
 	@Override

@@ -28,102 +28,114 @@ import java.io.InputStream;
 
 import java.lang.reflect.Constructor;
 
+import java.nio.charset.StandardCharsets;
+
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
-import org.apache.commons.configuration.PropertiesConfiguration;
-import org.apache.commons.configuration.PropertiesConfigurationLayout;
+import org.apache.commons.io.IOUtils;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * @author Terry Jia
  */
 public abstract class PropertiesFile extends LiferayLSPFile {
 
-	public PropertiesFile(File file) {
+	public PropertiesFile(File file, String storageFile) {
 		super(file);
-	}
-
-	public boolean checkPossibleKeys() {
-		return false;
-	}
-
-	public List<String> checkPossibleValueKeys() {
-		return Collections.emptyList();
-	}
-
-	public List<PropertyPair> getProperties() {
-		List<PropertyPair> propertyPairs = new ArrayList<>();
 
 		Class<?> clazz = getClass();
 
-		try (InputStream in = clazz.getResourceAsStream(getStorageFileName())) {
-			PropertiesConfiguration config = new PropertiesConfiguration();
+		try (InputStream in = clazz.getResourceAsStream(storageFile)) {
+			String source = IOUtils.toString(in, StandardCharsets.UTF_8);
 
-			config.setThrowExceptionOnMissing(false);
+			JSONObject jsonObject = new JSONObject(source);
 
-			config.load(in);
+			_checkPossibleKeys = jsonObject.getBoolean("checkPossibleKeys");
 
-			Iterator<String> keys = config.getKeys();
+			JSONArray keyJSONArray = jsonObject.getJSONArray("keys");
 
-			while (keys.hasNext()) {
-				String key = keys.next();
-
+			for (Object keyObject : keyJSONArray) {
 				PropertyPair propertyPair = new PropertyPair();
+
+				JSONObject keyJSONObject = (JSONObject)keyObject;
+
+				String key = keyJSONObject.getString("key");
+
+				boolean validateValues = keyJSONObject.getBoolean("validateValues");
+
+				if (validateValues) {
+					_checkPossibleValueKeys.add(key);
+				}
 
 				propertyPair.setKey(key);
 
-				String value = config.getString(key);
-
-				if (!StringUtil.isNullOrEmpty(value)) {
-					Service valueService = null;
-
-					if (value.equals("folder")) {
-						valueService = new FolderService(getFile());
-					}
-					else if (value.equals("boolean") || value.equals("true") || value.equals("false")) {
-						valueService = new BooleanService(getFile());
-					}
-					else if (value.startsWith("CustomLSP")) {
-						String className = "com.liferay.extensions.languageserver.services.custom." + value;
-
-						Class<?> serviceClass = Class.forName(className);
-
-						Constructor constructor = serviceClass.getConstructor(File.class);
-
-						valueService = (Service)constructor.newInstance(getFile());
-					}
-					else {
-						String[] possibleValues = config.getStringArray(key);
-
-						valueService = new StringArrayService(getFile(), possibleValues);
-					}
-
-					propertyPair.setValue(valueService);
-				}
-
-				PropertiesConfigurationLayout layout = config.getLayout();
-
-				String comment = layout.getComment(key);
-
-				if (comment != null) {
-					comment = comment.replaceAll("#", "");
+				try {
+					String comment = keyJSONObject.getString("comment");
 
 					propertyPair.setComment(comment);
 				}
+				catch (Exception e) {
+				}
 
-				propertyPairs.add(propertyPair);
+				try {
+					String value = keyJSONObject.getString("values");
+
+					if (!StringUtil.isNullOrEmpty(value)) {
+						Service valueService = null;
+
+						if (value.equals("folder")) {
+							valueService = new FolderService(getFile());
+						}
+						else if (value.equals("boolean") || value.equals("true") || value.equals("false")) {
+							valueService = new BooleanService(getFile());
+						}
+						else if (value.startsWith("CustomLSP")) {
+							String className = "com.liferay.extensions.languageserver.services.custom." + value;
+
+							Class<?> serviceClass = Class.forName(className);
+
+							Constructor constructor = serviceClass.getConstructor(File.class);
+
+							valueService = (Service)constructor.newInstance(getFile());
+						}
+						else {
+							String[] possibleValues = value.split(",");
+
+							valueService = new StringArrayService(getFile(), possibleValues);
+						}
+
+						propertyPair.setValue(valueService);
+					}
+				}
+				catch (Exception e) {
+				}
+
+				_propertyPairs.add(propertyPair);
 			}
 		}
 		catch (Exception e) {
 		}
-
-		return propertyPairs;
 	}
 
-	public abstract String getStorageFileName();
+	public boolean checkPossibleKeys() {
+		return _checkPossibleKeys;
+	}
+
+	public List<String> checkPossibleValueKeys() {
+		return _checkPossibleValueKeys;
+	}
+
+	public List<PropertyPair> getProperties() {
+		return _propertyPairs;
+	}
 
 	public abstract boolean match();
+
+	private boolean _checkPossibleKeys = false;
+	private List<String> _checkPossibleValueKeys = new ArrayList<>();
+	private List<PropertyPair> _propertyPairs = new ArrayList<>();
 
 }
